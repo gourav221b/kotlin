@@ -28,6 +28,7 @@ import org.jetbrains.kotlin.ir.types.toKotlinType
 import org.jetbrains.kotlin.ir.util.dump
 import org.jetbrains.kotlin.ir.util.getArgumentsWithIr
 import org.jetbrains.kotlin.ir.util.isSuspend
+import org.jetbrains.kotlin.resolve.BindingContext
 import org.jetbrains.kotlin.resolve.jvm.AsmTypes
 import org.jetbrains.kotlin.resolve.jvm.jvmSignature.JvmMethodSignature
 import org.jetbrains.org.objectweb.asm.Type
@@ -161,7 +162,8 @@ class IrInlineCodegen(
                 expression.symbol.owner.typeParameters.map { it.symbol },
                 function.origin == IrDeclarationOrigin.FUNCTION_FOR_DEFAULT_PARAMETER,
                 false,
-                codegen.typeMapper.typeSystem
+                codegen.typeMapper.typeSystem,
+                false
             )
         } finally {
             state.globalInlineContext.exitFromInliningOf(null)

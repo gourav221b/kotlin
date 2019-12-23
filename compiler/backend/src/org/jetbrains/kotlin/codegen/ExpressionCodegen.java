@@ -1498,10 +1498,9 @@ public class ExpressionCodegen extends KtVisitor<StackValue, StackValue> impleme
         v.visitLineNumber(lineNumber, label);
     }
 
-    //we should generate additional linenumber info after inline call only if it used as argument
     @Override
-    public void markLineNumberAfterInlineIfNeeded() {
-        if (!shouldMarkLineNumbers) {
+    public void markLineNumberAfterInlineIfNeeded(boolean registerLineNumberAfterwards) {
+        if (!shouldMarkLineNumbers || registerLineNumberAfterwards) {
             //if it used as general argument
             if (myLastLineNumber > -1) {
                 Label label = new Label();
@@ -1509,7 +1508,6 @@ public class ExpressionCodegen extends KtVisitor<StackValue, StackValue> impleme
                 v.visitLineNumber(myLastLineNumber, label);
             }
         } else {
-            //if it used as argument of infix call (in this case lineNumber for simple inlineCall also would be reset)
             resetLastLineNumber();
         }
     }
