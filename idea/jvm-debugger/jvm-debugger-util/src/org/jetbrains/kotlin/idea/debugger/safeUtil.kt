@@ -60,19 +60,11 @@ fun Method.safeArguments(): List<LocalVariable>? {
 }
 
 fun StackFrameProxy.safeLocation(): Location? {
-    return try {
-        this.location()
-    } catch (e: EvaluateException) {
-        null
-    }
+    return wrapEvaluateException { this.location() }
 }
 
 fun StackFrameProxy.safeStackFrame(): StackFrame? {
-    return try {
-        this.stackFrame
-    } catch (e: EvaluateException) {
-        null
-    }
+    return wrapEvaluateException { this.stackFrame }
 }
 
 fun Location.safeSourceName(): String? {
@@ -118,8 +110,12 @@ fun Field.safeType(): Type? {
     return wrapClassNotLoadedException { type() }
 }
 
-fun Method.safeSignature() {
-    wrapIllegalArgumentExceptionException { signature() }
+private inline fun <T> wrapEvaluateException(block: () -> T): T? {
+    return try {
+        block()
+    } catch (e: EvaluateException) {
+        null
+    }
 }
 
 private inline fun <T> wrapAbsentInformationException(block: () -> T): T? {
