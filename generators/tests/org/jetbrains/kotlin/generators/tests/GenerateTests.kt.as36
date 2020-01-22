@@ -318,6 +318,10 @@ fun main(args: Array<String>) {
             model("decompiler/navigation/usercode")
         }
 
+        testClass<AbstractNavigateJavaToLibrarySourceTest>(annotations = listOf(muteExtraSuffix(".libsrc"))) {
+            model("decompiler/navigation/userJavaCode", pattern = "^(.+)\\.java$")
+        }
+
         testClass<AbstractNavigateToLibrarySourceTestWithJS>(annotations = listOf(muteExtraSuffix(".libsrcjs"))) {
             model("decompiler/navigation/usercode", testClassName ="UsercodeWithJSModule")
         }
