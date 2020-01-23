@@ -11,8 +11,6 @@ import com.intellij.ide.hierarchy.call.CallHierarchyNodeDescriptor
 import com.intellij.ide.hierarchy.call.CalleeMethodsTreeStructure
 import com.intellij.ide.util.treeView.NodeDescriptor
 import com.intellij.psi.PsiElement
-import com.intellij.psi.PsiMember
-import com.intellij.psi.PsiMethod
 import com.intellij.util.ArrayUtil
 import com.intellij.util.containers.HashMap
 import org.jetbrains.kotlin.asJava.unwrapped
@@ -42,8 +40,9 @@ class KotlinCalleeTreeStructure(
 
     override fun buildChildren(nodeDescriptor: HierarchyNodeDescriptor): Array<Any> {
         if (nodeDescriptor is CallHierarchyNodeDescriptor) {
-            val psiMethod: PsiMember = nodeDescriptor.enclosingElement as? PsiMethod ?: return ArrayUtil.EMPTY_OBJECT_ARRAY
-            return CalleeMethodsTreeStructure(myProject, psiMethod, scopeType).getChildElements(nodeDescriptor)
+            val member /* : PsiMember in 193, : PsiMethod in 192 */ =
+                extractMemberFromDescriptor(nodeDescriptor) ?: return ArrayUtil.EMPTY_OBJECT_ARRAY
+            return CalleeMethodsTreeStructure(myProject, member, scopeType).getChildElements(nodeDescriptor)
         }
 
         val element = nodeDescriptor.psiElement as? KtElement ?: return ArrayUtil.EMPTY_OBJECT_ARRAY
