@@ -32,6 +32,9 @@
     <component>
       <implementation-class>org.jetbrains.kotlin.idea.parameterInfo.custom.KotlinCodeHintsModel</implementation-class>
     </component>
+    <component>
+      <implementation-class>org.jetbrains.kotlin.idea.highlighter.KotlinEditorListener</implementation-class>
+    </component>
   </project-components>
 
   <application-components>
