@@ -190,9 +190,6 @@ fun IrFunction.suspendFunctionView(context: JvmBackendContext, generateBody: Boo
             it.body?.transformChildrenVoid(object : VariableRemapper(valueParametersMapping) {
                 // Do not cross class boundaries inside functions. Otherwise, callable references will try to access wrong $completion.
                 override fun visitClass(declaration: IrClass): IrStatement = declaration
-
-                override fun visitCall(expression: IrCall): IrExpression =
-                    super.visitCall(expression.createSuspendFunctionCallViewIfNeeded(context, it, callerIsInlineLambda = false))
             })
         }
     }
