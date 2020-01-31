@@ -21,7 +21,7 @@ abstract class AbstractNavigateToLibraryTest : KotlinLightCodeInsightFixtureTest
 
     protected fun doTest(path: String) {
         myFixture.configureByFile(fileName())
-        val pathOfExpect = path.replace(".kt", expectedFileExt).replace(".java", expectedFileExt)
+        val pathOfExpect = path.replace(Regex("\\.kt|\\.java"), expectedFileExt)
         NavigationChecker.checkAnnotatedCode(file, File(pathOfExpect))
     }
 

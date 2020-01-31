@@ -10,6 +10,7 @@ import com.intellij.psi.PsiField
 import com.intellij.psi.PsiMember
 import com.intellij.psi.PsiMethod
 import com.intellij.psi.impl.compiled.SignatureParsing
+import com.intellij.util.cls.ClsFormatException
 import org.jetbrains.kotlin.asJava.builder.LightMemberOrigin
 import org.jetbrains.kotlin.asJava.classes.lazyPub
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -147,34 +148,48 @@ private fun ClassDescriptor.relativeClassName(): List<Name> {
 
 private fun excludeParametersFromDescriptor(descriptor: String, omittedParameters: List<Int>): String? {
 
-    val newSignature = StringBuilder()
-    var parameterIndex = 0
+    fun tryParseParametersAndReturnType(): Pair<List<String>, String>? {
+        val iterator = StringCharacterIterator(descriptor)
 
-    val iterator = StringCharacterIterator(descriptor)
-    if (iterator.current() != '(') return null
-    iterator.next()
-    newSignature.append('(')
-    if (iterator.current() == ')') {
-        newSignature.append(')')
-    } else {
-        while (iterator.current() != ')' && iterator.current() != CharacterIterator.DONE) {
+        fun parseTypeString(): String? {
             val begin = iterator.index
-            SignatureParsing.parseTypeString(iterator) { it }
-            val end = iterator.index
-            if (!omittedParameters.contains(parameterIndex)) {
-                newSignature.append(descriptor, begin, end)
+            try {
+                SignatureParsing.parseTypeString(iterator) { it }
+            } catch (e: ClsFormatException) {
+                return null
             }
-            parameterIndex++
+            val end = iterator.index
+            return descriptor.substring(begin, end)
         }
+
+        if (iterator.current() != '(') return null
+        iterator.next()
+
+        if (iterator.current() == ')') {
+            iterator.next()
+            val returnType = parseTypeString() ?: return null
+            return emptyList<String>() to returnType
+        }
+
+        val parameterTypes = mutableListOf<String>()
+        while (iterator.current() != ')' && iterator.current() != CharacterIterator.DONE) {
+            parameterTypes += parseTypeString() ?: return null
+        }
+
         if (iterator.current() != ')') return null
-        newSignature.append(')')
+        iterator.next()
+
+        val returnType = parseTypeString() ?: return null
+        return parameterTypes to returnType
     }
-    iterator.next()
-    val begin = iterator.index
-    SignatureParsing.parseTypeString(iterator) { it }
-    val end = iterator.index
-    newSignature.append(descriptor, begin, end)
-    return newSignature.toString()
+
+    val (parameterTypes, returnType) = tryParseParametersAndReturnType() ?: return null
+
+    val parametersList = parameterTypes
+        .filterIndexed { index, _ -> index !in omittedParameters }
+        .joinToString("")
+
+    return "($parametersList)$returnType"
 }
 
 private fun ClassDescriptor.desc(): String = "L" + JvmClassName.byClassId(classId!!).internalName + ";"
@@ -221,18 +236,18 @@ private object ByJvmSignatureIndexer : DecompiledTextIndexer<ClassNameAndSignatu
                 val signature = MemberSignature.fromJvmMemberSignature(it)
                 save(id, signature)
 
-                if (findJvmOverloadsAnnotation() != null) {
-                    val extensionShift = if (isExtension) 1 else 0
+                if (findJvmOverloadsAnnotation() == null) return
 
-                    val omittedList = mutableListOf<Int>()
-                    valueParameters.asReversed().forEach { parameter ->
-                        if (parameter.hasDefaultValue()) {
-                            omittedList.add(parameter.index + extensionShift)
-                            val newDescriptor = excludeParametersFromDescriptor(it.desc, omittedList)
-                            if (newDescriptor != null) {
-                                val overloadedSignature = MemberSignature.fromMethodNameAndDesc(it.name, newDescriptor)
-                                save(id, overloadedSignature)
-                            }
+                val extensionShift = if (isExtension) 1 else 0
+
+                val omittedList = mutableListOf<Int>()
+                valueParameters.asReversed().forEach { parameter ->
+                    if (parameter.hasDefaultValue()) {
+                        omittedList.add(parameter.index + extensionShift)
+                        val newDescriptor = excludeParametersFromDescriptor(it.desc, omittedList)
+                        if (newDescriptor != null) {
+                            val overloadedSignature = MemberSignature.fromMethodNameAndDesc(it.name, newDescriptor)
+                            save(id, overloadedSignature)
                         }
                     }
                 }

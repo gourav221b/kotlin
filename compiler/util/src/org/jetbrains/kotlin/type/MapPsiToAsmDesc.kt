@@ -57,9 +57,7 @@ object MapPsiToAsmDesc {
             append(typeDesc(it.type))
         }
         append(")")
-        psiMethod.returnType?.let {
-            append(typeDesc(it))
-        } ?: append("V")
+        append(psiMethod.returnType?.let { typeDesc(it) } ?: "V")
     }
 
     private fun unknownSignature() = ""
