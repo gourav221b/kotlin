@@ -13,7 +13,9 @@ import org.jetbrains.kotlin.backend.jvm.codegen.isJvmInterface
 import org.jetbrains.kotlin.backend.jvm.descriptors.JvmDeclarationFactory
 import org.jetbrains.kotlin.backend.jvm.lower.inlineclasses.unboxInlineClass
 import org.jetbrains.kotlin.builtins.KotlinBuiltIns
+import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.Visibilities
+import org.jetbrains.kotlin.descriptors.deserialization.PLATFORM_DEPENDENT_ANNOTATION_FQ_NAME
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.Scope
@@ -133,6 +135,7 @@ val IrFunction.propertyIfAccessor: IrDeclaration
     get() = (this as? IrSimpleFunction)?.correspondingPropertySymbol?.owner ?: this
 
 fun IrFunction.hasJvmDefault(): Boolean = propertyIfAccessor.hasAnnotation(JVM_DEFAULT_FQ_NAME)
+fun IrFunction.hasPlatformDependent(): Boolean = propertyIfAccessor.hasAnnotation(PLATFORM_DEPENDENT_ANNOTATION_FQ_NAME)
 
 fun IrFunction.getJvmVisibilityOfDefaultArgumentStub() =
     if (Visibilities.isPrivate(visibility) || isInlineOnly()) JavaVisibilities.PACKAGE_VISIBILITY else Visibilities.PUBLIC
@@ -209,3 +212,12 @@ fun IrBody.replaceThisByStaticReference(
             return super.visitGetValue(expression)
         }
     }, null)
+
+// Check whether a function maps to an abstract method.
+// For non-interface methods or interface methods coming from Java the modality is correct. Kotlin interface methods
+// are abstract unless they are annotated with @JvmDefault or @PlatformDependent or they override a method with
+// such an annotation.
+val IrSimpleFunction.isJvmAbstract: Boolean
+    get() = (modality == Modality.ABSTRACT) ||
+            (parentAsClass.isJvmInterface && !hasJvmDefault() && !hasPlatformDependent()
+                    && (!isFakeOverride || overriddenSymbols.all { it.owner.isJvmAbstract }))
