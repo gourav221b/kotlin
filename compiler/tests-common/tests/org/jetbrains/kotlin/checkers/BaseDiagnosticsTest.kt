@@ -477,7 +477,7 @@ abstract class BaseDiagnosticsTest : KotlinMultiFileTestWithJava<TestModule, Tes
             )
         }
 
-        private val DIAGNOSTIC_IN_TESTDATA_PATTERN = Regex("(<!>|(<!(.(\".*\")*?)+?!>))")
+        private val DIAGNOSTIC_IN_TESTDATA_PATTERN = Regex("<!>|<!(.*?(\\(\".*?\"\\)|\\(\\))??)+(?<!<)!>")
 
         fun loadTestDataWithoutDiagnostics(file: File): String {
             val textWithoutDiagnostics = KotlinTestUtils.doLoadFile(file).replace(DIAGNOSTIC_IN_TESTDATA_PATTERN, "")
