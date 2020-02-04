@@ -728,12 +728,13 @@ public abstract class MemberCodegen<T extends KtPureElement/* TODO: & KtDeclarat
 
     protected final void generateSyntheticAccessors() {
         for (AccessorForCallableDescriptor<?> accessor : ((CodegenContext<?>) context).getAccessors()) {
-            boolean hasJvmDefaultAnnotation = JvmAnnotationUtilKt.isCompiledToJvmDefaultIfNoAbstract(accessor.getCalleeDescriptor(), state.getJvmDefaultMode());
+            boolean compiledToJvmDefault =
+                    JvmAnnotationUtilKt.isCompiledToJvmDefaultIfNoAbstract(accessor.getCalleeDescriptor(), state.getJvmDefaultMode());
             OwnerKind kind = context.getContextKind();
 
             if (!isInterface(context.getContextDescriptor()) ||
-                (hasJvmDefaultAnnotation && kind == OwnerKind.IMPLEMENTATION) ||
-                (!hasJvmDefaultAnnotation && kind == OwnerKind.DEFAULT_IMPLS)) {
+                (compiledToJvmDefault && kind == OwnerKind.IMPLEMENTATION) ||
+                (!compiledToJvmDefault && kind == OwnerKind.DEFAULT_IMPLS)) {
                 generateSyntheticAccessor(accessor);
             }
         }
