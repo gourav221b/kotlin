@@ -7,10 +7,8 @@ package org.jetbrains.kotlin.fir.declarations.synthetic
 
 import org.jetbrains.kotlin.fir.FirSession
 import org.jetbrains.kotlin.fir.FirSourceElement
-import org.jetbrains.kotlin.fir.declarations.FirDeclarationStatus
-import org.jetbrains.kotlin.fir.declarations.FirProperty
-import org.jetbrains.kotlin.fir.declarations.FirResolvePhase
-import org.jetbrains.kotlin.fir.declarations.FirTypeParameter
+import org.jetbrains.kotlin.fir.declarations.*
+import org.jetbrains.kotlin.fir.declarations.impl.FirDeclarationStatusImpl
 import org.jetbrains.kotlin.fir.expressions.FirAnnotationCall
 import org.jetbrains.kotlin.fir.expressions.FirExpression
 import org.jetbrains.kotlin.fir.references.FirControlFlowGraphReference
@@ -38,6 +36,18 @@ class FirSyntheticProperty(
     init {
         symbol.bind(this)
     }
+
+    constructor(
+        session: FirSession,
+        name: Name,
+        symbol: FirPropertySymbol,
+        delegateGetter: FirSimpleFunction
+    ) : this(
+        session, delegateGetter.returnTypeRef, name, false, symbol,
+        FirDeclarationStatusImpl(delegateGetter.visibility, delegateGetter.modality),
+        delegateGetter.resolvePhase,
+        FirSyntheticPropertyAccessor(delegateGetter, isGetter = true)
+    )
 
     override val source: FirSourceElement?
         get() = null

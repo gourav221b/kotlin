@@ -7,12 +7,8 @@ package org.jetbrains.kotlin.fir.resolve.calls
 
 import org.jetbrains.kotlin.fir.FirSession
 import org.jetbrains.kotlin.fir.declarations.FirSimpleFunction
-import org.jetbrains.kotlin.fir.declarations.impl.FirDeclarationStatusImpl
 import org.jetbrains.kotlin.fir.declarations.isStatic
-import org.jetbrains.kotlin.fir.declarations.modality
 import org.jetbrains.kotlin.fir.declarations.synthetic.FirSyntheticProperty
-import org.jetbrains.kotlin.fir.declarations.synthetic.FirSyntheticPropertyAccessor
-import org.jetbrains.kotlin.fir.declarations.visibility
 import org.jetbrains.kotlin.fir.scopes.FirScope
 import org.jetbrains.kotlin.fir.symbols.AccessorSymbol
 import org.jetbrains.kotlin.fir.symbols.CallableId
@@ -54,25 +50,15 @@ class FirSyntheticPropertiesScope(
         if (fir.isStatic) return
         if (fir.returnTypeRef.coneTypeSafe<ConeClassLikeType>()?.lookupTag?.classId == StandardClassIds.Unit) return
 
-        val syntheticSymbol = SyntheticPropertySymbol(
-            accessorId = symbol.callableId,
-            callableId = CallableId(symbol.callableId.packageName, symbol.callableId.className, name)
+        val property = FirSyntheticProperty(
+            session, name,
+            symbol = SyntheticPropertySymbol(
+                accessorId = symbol.callableId,
+                callableId = CallableId(symbol.callableId.packageName, symbol.callableId.className, name)
+            ),
+            delegateGetter = fir
         )
-
-        val returnTypeRef = fir.returnTypeRef
-        val status = FirDeclarationStatusImpl(fir.visibility, fir.modality)
-        FirSyntheticProperty(
-            session,
-            returnTypeRef,
-            name,
-            false,
-            syntheticSymbol,
-            status,
-            fir.resolvePhase,
-            getter = FirSyntheticPropertyAccessor(fir, isGetter = true)
-        )
-
-        processor(syntheticSymbol)
+        processor(property.symbol)
     }
 
     override fun processPropertiesByName(name: Name, processor: (FirCallableSymbol<*>) -> Unit) {
