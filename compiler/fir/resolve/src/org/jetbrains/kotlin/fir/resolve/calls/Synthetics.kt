@@ -7,16 +7,18 @@ package org.jetbrains.kotlin.fir.resolve.calls
 
 import org.jetbrains.kotlin.fir.FirSession
 import org.jetbrains.kotlin.fir.declarations.FirSimpleFunction
+import org.jetbrains.kotlin.fir.declarations.impl.FirDeclarationStatusImpl
 import org.jetbrains.kotlin.fir.declarations.isStatic
+import org.jetbrains.kotlin.fir.declarations.modality
+import org.jetbrains.kotlin.fir.declarations.synthetic.FirSyntheticProperty
+import org.jetbrains.kotlin.fir.declarations.synthetic.FirSyntheticPropertyAccessor
+import org.jetbrains.kotlin.fir.declarations.visibility
 import org.jetbrains.kotlin.fir.scopes.FirScope
 import org.jetbrains.kotlin.fir.symbols.AccessorSymbol
 import org.jetbrains.kotlin.fir.symbols.CallableId
 import org.jetbrains.kotlin.fir.symbols.StandardClassIds
 import org.jetbrains.kotlin.fir.symbols.SyntheticSymbol
-import org.jetbrains.kotlin.fir.symbols.impl.FirCallableSymbol
-import org.jetbrains.kotlin.fir.symbols.impl.FirFunctionSymbol
-import org.jetbrains.kotlin.fir.symbols.impl.FirNamedFunctionSymbol
-import org.jetbrains.kotlin.fir.symbols.impl.FirVariableSymbol
+import org.jetbrains.kotlin.fir.symbols.impl.*
 import org.jetbrains.kotlin.fir.types.ConeClassLikeType
 import org.jetbrains.kotlin.fir.types.coneTypeSafe
 import org.jetbrains.kotlin.load.java.propertyNameByGetMethodName
@@ -27,7 +29,7 @@ import org.jetbrains.kotlin.util.capitalizeDecapitalize.capitalizeFirstWord
 class SyntheticPropertySymbol(
     callableId: CallableId,
     override val accessorId: CallableId
-) : FirNamedFunctionSymbol(callableId), AccessorSymbol, SyntheticSymbol
+) : FirPropertySymbol(callableId), AccessorSymbol, SyntheticSymbol
 
 class FirSyntheticFunctionSymbol(
     callableId: CallableId
@@ -43,7 +45,7 @@ class FirSyntheticPropertiesScope(
     private fun checkGetAndCreateSynthetic(
         name: Name,
         symbol: FirFunctionSymbol<*>,
-        processor: (FirCallableSymbol<*>) -> Unit
+        processor: (FirVariableSymbol<*>) -> Unit
     ) {
         val fir = symbol.fir as? FirSimpleFunction ?: return
 
@@ -52,13 +54,25 @@ class FirSyntheticPropertiesScope(
         if (fir.isStatic) return
         if (fir.returnTypeRef.coneTypeSafe<ConeClassLikeType>()?.lookupTag?.classId == StandardClassIds.Unit) return
 
-        val synthetic = SyntheticPropertySymbol(
+        val syntheticSymbol = SyntheticPropertySymbol(
             accessorId = symbol.callableId,
             callableId = CallableId(symbol.callableId.packageName, symbol.callableId.className, name)
         )
-        synthetic.bind(fir)
 
-        processor(synthetic)
+        val returnTypeRef = fir.returnTypeRef
+        val status = FirDeclarationStatusImpl(fir.visibility, fir.modality)
+        FirSyntheticProperty(
+            session,
+            returnTypeRef,
+            name,
+            false,
+            syntheticSymbol,
+            status,
+            fir.resolvePhase,
+            getter = FirSyntheticPropertyAccessor(fir, isGetter = true)
+        )
+
+        processor(syntheticSymbol)
     }
 
     override fun processPropertiesByName(name: Name, processor: (FirCallableSymbol<*>) -> Unit) {
