@@ -10,6 +10,7 @@ import org.jetbrains.kotlin.fir.FirAnnotationContainer
 import org.jetbrains.kotlin.fir.FirSession
 import org.jetbrains.kotlin.fir.declarations.*
 import org.jetbrains.kotlin.fir.declarations.impl.*
+import org.jetbrains.kotlin.fir.declarations.synthetic.FirSyntheticProperty
 import org.jetbrains.kotlin.fir.expressions.FirConstKind
 import org.jetbrains.kotlin.fir.expressions.FirExpression
 import org.jetbrains.kotlin.fir.expressions.impl.FirConstExpressionImpl
@@ -103,11 +104,16 @@ class JavaClassEnhancementScope(
                 }
                 return symbol
             }
-            is FirJavaMethod -> {
+            is FirSyntheticProperty -> {
                 original as FirAccessorSymbol
-                return enhanceMethod(
-                    firElement, original.accessorId, original.accessorId.callableName, isAccessor = true, propertyId = original.callableId
-                ) as FirAccessorSymbol
+                val enhancedFunctionSymbol = enhanceMethod(
+                    firElement.getter.delegate, original.accessorId, original.accessorId.callableName
+                )
+                val enhancedProperty = FirSyntheticProperty(
+                    session, name, FirAccessorSymbol(original.callableId, original.accessorId),
+                    enhancedFunctionSymbol.fir as FirSimpleFunction
+                )
+                return enhancedProperty.symbol
             }
             else -> {
                 if (original is FirPropertySymbol || original is FirAccessorSymbol) return original
@@ -131,9 +137,7 @@ class JavaClassEnhancementScope(
     private fun enhanceMethod(
         firMethod: FirFunction<*>,
         methodId: CallableId,
-        name: Name,
-        isAccessor: Boolean = false,
-        propertyId: CallableId? = null
+        name: Name
     ): FirFunctionSymbol<*> {
         val memberContext = context.copyWithNewDefaultTypeQualifiers(typeQualifierResolver, jsr305State, firMethod.annotations)
 
@@ -224,8 +228,7 @@ class JavaClassEnhancementScope(
                 newReceiverTypeRef,
                 firMethod.status,
                 name,
-                if (!isAccessor) FirNamedFunctionSymbol(methodId)
-                else FirAccessorSymbol(callableId = propertyId!!, accessorId = methodId)
+                FirNamedFunctionSymbol(methodId)
             ).apply {
                 resolvePhase = FirResolvePhase.ANALYZED_DEPENDENCIES
                 this.valueParameters += newValueParameters
