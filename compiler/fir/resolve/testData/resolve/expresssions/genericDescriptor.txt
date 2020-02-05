@@ -14,3 +14,9 @@ FILE: test.kt
         R|<local>/call|.R|FakeOverride</Call.resultingDescriptor: R|Descriptor|>|.R|/name|
         R|<local>/resolvedCall|.R|/ResolvedCall.resultingDescriptor|.R|/name|
     }
+    public abstract interface CallableDescriptor : R|Descriptor| {
+    }
+    public final fun anotherTest(call: R|Call<out CallableDescriptor>|, resolvedCall: R|ResolvedCall<out CallableDescriptor>|): R|kotlin/Unit| {
+        R|<local>/call|.R|FakeOverride</Call.resultingDescriptor: R|CallableDescriptor|>|.R|/name|
+        R|<local>/resolvedCall|.R|/ResolvedCall.resultingDescriptor|.R|/name|
+    }

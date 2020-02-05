@@ -29,3 +29,10 @@ fun otherTest(call: Call<*>, resolvedCall: ResolvedCall<*>) {
     call.resultingDescriptor.name
     resolvedCall.resultingDescriptor.name
 }
+
+interface CallableDescriptor : Descriptor
+
+fun anotherTest(call: Call<out CallableDescriptor>, resolvedCall: ResolvedCall<out CallableDescriptor>) {
+    call.resultingDescriptor.name
+    resolvedCall.resultingDescriptor.name
+}
