@@ -32,7 +32,7 @@ class DebugInfoDiagnosticFactory1 : DiagnosticFactory1<PsiElement, String>,
         bindingContext: BindingContext,
         dataFlowValueFactory: DataFlowValueFactory?,
         languageVersionSettings: LanguageVersionSettings?,
-        moduleDescriptor: ModuleDescriptorImpl?
+        moduleDescriptor: ModuleDescriptorImpl?,
     ) = when (name) {
         "EXPRESSION_TYPE" -> {
             val (type, dataFlowTypes) = CheckerTestUtil.getTypeInfo(
@@ -40,10 +40,15 @@ class DebugInfoDiagnosticFactory1 : DiagnosticFactory1<PsiElement, String>,
                 bindingContext,
                 dataFlowValueFactory,
                 languageVersionSettings,
-                moduleDescriptor
+                moduleDescriptor,
             )
 
             this.on(expression, Renderers.renderExpressionType(type, dataFlowTypes))
+        }
+        "FQ_NAME" -> {
+            val fqName = CheckerTestUtil.getFqName(expression, bindingContext)
+            this.on(expression, fqName.asString())
+
         }
         else -> throw NotImplementedError("Creation diagnostic '$name' isn't supported.")
     }
@@ -55,7 +60,7 @@ class DebugInfoDiagnosticFactory1 : DiagnosticFactory1<PsiElement, String>,
 
     protected constructor(name: String, severity: Severity, withExplicitDefinitionOnly: Boolean) : super(
         severity,
-        PositioningStrategies.DEFAULT
+        PositioningStrategies.DEFAULT,
     ) {
         this.name = name
         this.withExplicitDefinitionOnly = withExplicitDefinitionOnly
@@ -65,7 +70,12 @@ class DebugInfoDiagnosticFactory1 : DiagnosticFactory1<PsiElement, String>,
         val EXPRESSION_TYPE = create(
             "EXPRESSION_TYPE",
             Severity.INFO,
-            true
+            true,
+        )
+        val FQ_NAME = create(
+            "FQ_NAME",
+            Severity.INFO,
+            true,
         )
 
         fun create(name: String, severity: Severity): DebugInfoDiagnosticFactory1 {
